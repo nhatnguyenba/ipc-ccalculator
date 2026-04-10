@@ -12,8 +12,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -29,12 +27,14 @@ import com.nhatnguyenba.common.ICalculatorService
 class MainActivity : ComponentActivity() {
 
     private var calculatorService: ICalculatorService? = null
+    private val serviceState = mutableStateOf<ICalculatorService?>(null)
 
     private val connection = object : ServiceConnection {
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             calculatorService = ICalculatorService.Stub.asInterface(service)
-            Log.d("NHAT", "onServiceConnected, calculatorService="+calculatorService)
+            serviceState.value = calculatorService
+            Log.d("NHAT", "onServiceConnected, calculatorService=" + calculatorService)
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -48,54 +48,45 @@ class MainActivity : ComponentActivity() {
         bindCalculatorService()
 
         setContent {
-            AppContent()
+            val service = serviceState.value
+
+            if (service == null) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Connecting to service...")
+                }
+            } else {
+                val viewModel = remember(service) {
+                    val repo = CalculatorRepositoryImpl(service)
+
+                    CalculatorViewModel(
+                        AddUseCase(repo),
+                        SubtractUseCase(repo),
+                        MultiplyUseCase(repo),
+                        DivideUseCase(repo)
+                    )
+                }
+
+                CalculatorScreen(viewModel)
+            }
         }
     }
 
     private fun bindCalculatorService() {
-        val intent = Intent("com.nhatnguyenba.calculator.SERVICE").apply {
-            setPackage("com.nhatnguyenba.server")
-        }
-        bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        val intent = Intent()
+        intent.setClassName(
+            "com.nhatnguyenba.server",
+            "com.nhatnguyenba.server.service.CalculatorService"
+        )
+
+        val success = bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        Log.d("NHAT", "bind result = $success")
     }
 
     override fun onDestroy() {
         super.onDestroy()
         unbindService(connection)
-    }
-
-    @Composable
-    fun AppContent() {
-
-        // observe service to recomposition
-        val serviceState = remember { mutableStateOf(calculatorService) }
-
-        // update when service connect
-        LaunchedEffect(calculatorService) {
-            serviceState.value = calculatorService
-        }
-
-        val viewModel = remember(serviceState.value) {
-
-            val repo = CalculatorRepositoryImpl(serviceState.value)
-
-            CalculatorViewModel(
-                AddUseCase(repo),
-                SubtractUseCase(repo),
-                MultiplyUseCase(repo),
-                DivideUseCase(repo)
-            )
-        }
-
-        if (serviceState.value == null) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Connecting to calculator service...")
-            }
-        } else {
-            CalculatorScreen(viewModel)
-        }
     }
 }
