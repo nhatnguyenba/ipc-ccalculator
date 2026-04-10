@@ -103,9 +103,9 @@ fun handleClick(label: String, vm: CalculatorViewModel) {
         "C" -> vm.onClear()
         "⌫" -> vm.onDelete()
         "+" -> vm.onOperationClick(Operation.ADD)
-        "-" -> vm.onOperationClick(Operation.SUBTRACT)
-        "×" -> vm.onOperationClick(Operation.MULTIPLY)
-        "÷" -> vm.onOperationClick(Operation.DIVIDE)
+        "-" -> vm.onOperationClick(Operation.SUB)
+        "×" -> vm.onOperationClick(Operation.MUL)
+        "÷" -> vm.onOperationClick(Operation.DIV)
         "=" -> vm.onEqualClick()
         else -> vm.onNumberClick(label)
     }
