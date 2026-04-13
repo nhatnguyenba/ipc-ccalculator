@@ -16,12 +16,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.ViewModelProvider
 import com.nhatnguyenba.calculator.data.CalculatorRepositoryImpl
 import com.nhatnguyenba.calculator.domain.AddUseCase
+import com.nhatnguyenba.calculator.domain.CalculatorRepository
 import com.nhatnguyenba.calculator.domain.DivideUseCase
 import com.nhatnguyenba.calculator.domain.MultiplyUseCase
 import com.nhatnguyenba.calculator.domain.SubtractUseCase
 import com.nhatnguyenba.calculator.presentation.viewmodel.CalculatorViewModel
+import com.nhatnguyenba.calculator.presentation.viewmodel.CalculatorViewModelFactory
 import com.nhatnguyenba.common.ICalculatorService
 
 class MainActivity : ComponentActivity() {
@@ -59,14 +62,17 @@ class MainActivity : ComponentActivity() {
                 }
             } else {
                 val viewModel = remember(service) {
-                    val repo = CalculatorRepositoryImpl(service)
+                    val repo: CalculatorRepository = CalculatorRepositoryImpl(service)
 
-                    CalculatorViewModel(
+                    val factory = CalculatorViewModelFactory(
                         AddUseCase(repo),
                         SubtractUseCase(repo),
                         MultiplyUseCase(repo),
                         DivideUseCase(repo)
                     )
+
+                    ViewModelProvider(this, factory)
+                        .get(CalculatorViewModel::class.java)
                 }
 
                 CalculatorScreen(viewModel)
